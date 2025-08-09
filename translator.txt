@@ -1,0 +1,6 @@
+1° login.js
+2° Asks in app.py
+3° Messages alert in app.py
+4° Lang files
+5° Modal in rating.html e dashboard.html
+6° Alterar moedas
