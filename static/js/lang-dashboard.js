@@ -34,7 +34,7 @@ const translations = {
         'saldo-currency': 'Saldo attuale',
         'legends-saldo-currency': 'Disponibile per il prelievo',
         'analysis': 'Prelievi in analisi',
-        'legends-analysis': 'In attesa di approvazione',
+        'legends-analysis': 'Tempo medio di approvazione: 5-7 giorni lavorativi',
         'avaluations': 'Valutazioni',
         'legendas-avaluations': 'Effettuate oggi',
         'limit-day-alert': 'Limite giornaliero di valutazioni raggiunto! Torna domani per continuare.',
@@ -66,5 +66,5 @@ function applyTranslation(lang) {
 
 // Exemplo de uso
 document.addEventListener('DOMContentLoaded', () => {
-    applyTranslation('es'); // Altere para 'pt', 'es', etc.
+    applyTranslation('it'); // Altere para 'pt', 'es', etc.
 });

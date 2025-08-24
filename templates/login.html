@@ -1,5 +1,5 @@
 <!doctype html>
-    <html lang="es-ES">
+    <html lang="it">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -33,10 +33,10 @@
             {% endif %}
             <form action="/login" method="post" id="formLogin">
                 <div class="mb-3">
-                    <input type="text" class="form-control" id="username" placeholder="Username" name="username">
+                    <input type="text" class="form-control" id="username" placeholder="Username" name="username" required>
                 </div>
                 <div class="mb-3">
-                    <input type="password" class="form-control" id="password" name="password" placeholder="Password">
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
                 </div>
                 <button type="submit" class="btn bg-btn" id="login">Login</button>
                 <button class="btn bg-btn2 mt-2" id="to-register">Cadastre-se</button>
@@ -44,13 +44,13 @@
 
             <form action="/register" method="post" id="formRegister" class="d-none">
                 <div class="mb-3">
-                    <input type="text" class="form-control" id="confirm-username" placeholder="Username" name="username">
+                    <input type="text" class="form-control" id="confirm-username" placeholder="Username" name="username" required>
                 </div>
                 <div class="mb-3">
-                    <input type="password" class="form-control" id="confirm-password" name="password" placeholder="Password">
+                    <input type="password" class="form-control" id="confirm-password" name="password" placeholder="Password" required>
                 </div>
                 <div class="mb-3">
-                    <input type="password" class="form-control" id="confirm-confirm-password" name="confirm-password" placeholder="Confirm password">
+                    <input type="password" class="form-control" id="confirm-confirm-password" name="confirm-password" placeholder="Confirm password" required>
                 </div>
                 <button type="submit" class="btn bg-btn" id="create-account">Criar Conta</button>
                 <button class="btn bg-btn2 mt-2" id="to-login">Faça Login</button>

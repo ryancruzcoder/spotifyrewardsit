@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, session
-import json
-from datetime import datetime
 import os
+import json
 import random
+from datetime import datetime
+from datetime import timedelta
+from flask import Flask, render_template, request, redirect, url_for, session
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # troque por uma chave segura em produção
@@ -15,6 +16,33 @@ ASKMUSIC = ["La musica ha suscitato qualche emozione in te?", "Ti è piaciuta la
 # ASKMUSIC = ["Cette chanson a-t-elle réveillé une émotion chez toi ?", "As-tu aimé la voix du chanteur ou de la chanteuse ?", "Est-ce que tu écouterais cette chanson à nouveau ?", "Les paroles ont-elles un message intéressant ou important ?", "La production musicale te semble-t-elle bien faite ?", "Tu recommanderais cette chanson à quelqu’un ?", "Le refrain t’est-il resté dans la tête ?", "Cette chanson t’a-t-elle rappelé un moment de ta vie ?", "Le style musical correspond-il à tes goûts personnels ?", "L’artiste te semble-t-il avoir une identité propre ?", "As-tu ressenti de l’authenticité dans la performance ?", "Cette chanson est-elle différente de ce que tu écoutes d’habitude ?", "Le rythme t’a-t-il donné envie de danser ou bouger ?", "Tu penses que cette chanson peut devenir un hit ?", "La pochette ou l’image de l’artiste t’a-t-elle attiré positivement ?", "Les paroles sont-elles faciles à comprendre et à suivre ?", "Tu écouterais cette chanson à différents moments de la journée ?", "Cette chanson t’a-t-elle donné envie d’en découvrir plus sur l’artiste ?", "La chanson transmet-elle une émotion vraie ?", "La mélodie est-elle agréable à écouter ?", "Y a-t-il un passage de la chanson qui t’a marqué ?", "Le clip (s’il existe) améliore-t-il l’expérience ?", "Tu trouves que l’artiste est cohérent avec ses autres chansons ?", "Cette chanson est-elle originale par rapport à d’autres du même genre ?", "La rythmique ou l’instrumental t’a-t-elle marqué positivement ?", "Tu te vois ajouter cette chanson à l’une de tes playlists ?", "Tu trouves que l’artiste a du talent ?", "La chanson t’a-t-elle surpris(e) d’une certaine manière ?", "Tu penses que l’artiste a un avenir dans l’industrie musicale ?", "Tu recommanderais cette chanson/artiste à quelqu’un avec des goûts différents des tiens ?"]
 IMGSRANDOM = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
 
+
+def processar_saques_automaticos():
+    """Move saques de 'pending' para 'confirmado' após 5 dias"""
+    db = load_db()
+    agora = datetime.now()
+
+    for username, user in db['users'].items():
+        if 'withdrawn_requests' not in user:
+            continue
+
+        # Vamos filtrar os saques que já podem ser confirmados
+        novos_pedidos = []
+        for req in user['withdrawn_requests']:
+            data_pedido = datetime.fromisoformat(req['date'])
+            if (agora - data_pedido) >= timedelta(days=5):
+                # ✅ Aprovar: mover para histórico
+                user['total_withdrawn'] = user.get('total_withdrawn', 0.0) + req['amount']
+                user['last_withdraw_date'] = req['amount']
+                user['withdrawn'] -= req['amount']  # tira do valor em análise
+            else:
+                # ❌ Ainda em análise → mantém
+                novos_pedidos.append(req)
+
+        # Atualiza a lista de pedidos
+        user['withdrawn_requests'] = novos_pedidos
+
+    save_db(db)
 def resetar_se_novo_dia(user):
     hoje = datetime.now().date().isoformat()
     if user.get('last_evaluation_date') != hoje:
@@ -33,6 +61,11 @@ def load_db():
 def save_db(data):
     with open(DB_PATH, 'w') as file:
         json.dump(data, file, indent=4)
+
+
+@app.before_request
+def antes_de_toda_requisicao():
+    processar_saques_automaticos()
 
 @app.route('/')
 def home():
@@ -74,13 +107,17 @@ def register():
         return render_template('login.html', error="Il nome utente esiste già.")
 
     db['users'][username] = {
-        "password": password,
+        "password": password,  
         "paypal": "",
         "balance": 180.0,
-        "withdrawn": 0.0,
+        "withdrawn": 0.0,  # saques em análise
+        "total_withdrawn": 0.0,  # saques confirmados (últimos saques)
+        "withdrawn_requests": [],  # lista: { amount, status ('pending'), date }
         "created_at": datetime.now().isoformat(),
         "last_withdraw_date": None,
-        "evaluations_today": 0
+        "evaluations_today": 0,
+        "earned_today": 0.0,
+        "last_evaluation_date": datetime.now().date().isoformat()
     }
 
     save_db(db)
@@ -173,7 +210,46 @@ def salvar_avaliacoes():
     except Exception as e:
         return jsonify(success=False, error=str(e))
 
+@app.route('/confirm-withdraw', methods=['POST'])
+def confirm_withdraw():
+    if 'username' not in session:
+        return jsonify(success=False, error="Sessão expirada.")
 
+    username = session['username']
+    db = load_db()
+    user = db['users'][username]
+
+    amount = float(request.form.get('amount'))
+    paypal = request.form.get('paypal')
+
+    # Verifica se o valor bate com o saldo
+    if abs(amount - user['balance']) > 0.01:
+        return jsonify(success=False, error="Valor inválido.")
+
+    # Verifica mínimo
+    if amount < 2000:
+        return jsonify(success=False, error="Saldo insuficiente para saque.")
+
+    # Salva o PayPal se ainda não tiver
+    if not user['paypal'] and paypal:
+        user['paypal'] = paypal
+    elif not paypal:
+        return jsonify(success=False, error="Informe o e-mail do PayPal.")
+
+    # Zera o saldo e move para "saques em análise"
+    user['withdrawn'] += user['balance']  # soma tudo para análise
+    user['balance'] = 0.0  # zera
+
+    # Adiciona na lista de pedidos (para controle futuro)
+    user['withdrawn_requests'] = user.get('withdrawn_requests', [])
+    user['withdrawn_requests'].append({
+        "amount": amount,
+        "status": "pending",
+        "date": datetime.now().isoformat()
+    })
+
+    save_db(db)
+    return jsonify(success=True, message="Saque solicitado com sucesso!")
 
 # Rota de logout
 @app.route('/logout')
