@@ -114,7 +114,7 @@ def register():
         "total_withdrawn": 0.0,  # saques confirmados (últimos saques)
         "withdrawn_requests": [],  # lista: { amount, status ('pending'), date }
         "created_at": datetime.now().isoformat(),
-        "last_withdraw_date": None,
+        "last_withdraw_date": 0.0,
         "evaluations_today": 0,
         "earned_today": 0.0,
         "last_evaluation_date": datetime.now().date().isoformat()
@@ -260,3 +260,4 @@ def logout():
 # Execução local
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8080)
+
