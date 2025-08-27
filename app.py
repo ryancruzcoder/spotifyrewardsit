@@ -1,5 +1,3 @@
-import os
-import json
 import random
 from datetime import datetime, timedelta
 from pymongo import MongoClient
@@ -8,7 +6,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 # -------------------------------
 # Conexão com MongoDB
 # -------------------------------
-mongo_uri = "mongodb+srv://g2rdigitalhub:vwzl4iFJwpM3pP0R@cluster.dfuczmh.mongodb.net/spotify_rewards?retryWrites=true&w=majority&tls=true"
+mongo_uri = "mongodb://mongo:FhnkapJSrFjgtaKskHyGMtNEiALGZsco@mongodb.railway.internal:27017/"
 client = MongoClient(mongo_uri)
 
 db = client["spotify_rewards"]
