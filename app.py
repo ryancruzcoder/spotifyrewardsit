@@ -1,5 +1,4 @@
 import os
-import ssl
 import json
 import random
 from datetime import datetime, timedelta
@@ -10,12 +9,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 # Conexão com MongoDB
 # -------------------------------
 mongo_uri = "mongodb+srv://g2rdigitalhub:vwzl4iFJwpM3pP0R@cluster.dfuczmh.mongodb.net/spotify_rewards?retryWrites=true&w=majority&tls=true"
-
-client = MongoClient(
-    mongo_uri,
-    ssl=True,
-    ssl_cert_reqs=ssl.CERT_REQUIRED  # só para teste; em produção use ssl_cert_reqs=ssl.CERT_REQUIRED
-)
+client = MongoClient(mongo_uri)
 
 db = client["spotify_rewards"]
 collection = db["italian"]
